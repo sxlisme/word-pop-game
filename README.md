@@ -7,6 +7,8 @@
 构建结果是一个完全自包含的 HTML 文件。JavaScript、CSS、图标和词库均已内联，
 不需要安装应用或连接服务器，双击即可开始使用。
 
+在线体验：<https://sxlisme.github.io/word-pop-game/>
+
 ## 功能概览
 
 | 功能 | 说明 |
