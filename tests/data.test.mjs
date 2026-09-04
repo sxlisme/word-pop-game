@@ -4,6 +4,7 @@ import test from 'node:test'
 import { BUILTIN_WORDS } from '../src/data/words.js'
 import { parseWordFile } from '../src/utils/importer.js'
 import { duelOutcome } from '../src/utils/duel.js'
+import { loadCustomWords, saveCustomWords } from '../src/utils/storage.js'
 
 test('built-in vocabulary contains exactly 3000 unique words in expected stages', () => {
   assert.equal(BUILTIN_WORDS.length, 3000)
@@ -22,6 +23,29 @@ test('imports CSV, tab-separated and JSON vocabularies', () => {
   assert.deepEqual(parseWordFile('[{"english":"hello","chinese":"你好"}]', 'words.json'), [
     { en: 'hello', zh: '你好', stage: 'custom' },
   ])
+})
+
+test('custom vocabulary deletions persist in local storage', () => {
+  const originalStorage = globalThis.localStorage
+  const values = new Map()
+  globalThis.localStorage = {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, value),
+  }
+
+  try {
+    const words = [
+      { en: 'apple', zh: '苹果', stage: 'custom' },
+      { en: 'book', zh: '书', stage: 'custom' },
+      { en: 'friend', zh: '朋友', stage: 'custom' },
+    ]
+    saveCustomWords(words)
+    saveCustomWords(words.filter((word) => word.en !== 'book'))
+    assert.deepEqual(loadCustomWords(), [words[0], words[2]])
+  } finally {
+    if (originalStorage === undefined) delete globalThis.localStorage
+    else globalThis.localStorage = originalStorage
+  }
 })
 
 test('production artifact is a self-contained HTML document', async () => {
