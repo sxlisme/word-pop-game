@@ -25,6 +25,7 @@ const toast = ref(null)
 const result = ref(null)
 let timer = null
 let toastTimer = null
+let speechTimer = null
 
 const totalTarget = computed(() => boards.value.reduce((sum, board) => sum + board.target, 0))
 const totalMatched = computed(() => boards.value.reduce((sum, board) => sum + board.matched, 0))
@@ -41,6 +42,7 @@ const timeLabel = computed(() => {
 onMounted(startRound)
 onBeforeUnmount(() => {
   stopTimer()
+  window.clearTimeout(speechTimer)
   window.speechSynthesis?.cancel()
 })
 
@@ -112,7 +114,8 @@ function stopTimer() {
 }
 
 function selectCard(board, card) {
-  if (board.locked || board.finished || paused.value || result.value || card.status !== 'idle') return
+  const interactive = card.status === 'idle' || card.status === 'selected'
+  if (board.locked || board.finished || paused.value || result.value || !interactive) return
   if (card.side === 'en') speak(card.text)
 
   const first = board.cards.find((item) => item.id === board.selectedId)
@@ -122,8 +125,6 @@ function selectCard(board, card) {
     return
   }
   if (first.id === card.id) {
-    first.status = 'idle'
-    board.selectedId = null
     return
   }
   if (first.side === card.side) {
@@ -228,13 +229,14 @@ function showToast(message, tone = 'sunny') {
 
 function speak(text) {
   if (!props.soundEnabled || !('speechSynthesis' in window)) return
+  window.clearTimeout(speechTimer)
   window.speechSynthesis.cancel()
   const utterance = new SpeechSynthesisUtterance(text)
   utterance.lang = 'en-US'
   utterance.rate = 0.85
   const voices = window.speechSynthesis.getVoices()
   utterance.voice = voices.find((voice) => /^en-(US|GB)/i.test(voice.lang)) || voices.find((voice) => /^en/i.test(voice.lang)) || null
-  window.speechSynthesis.speak(utterance)
+  speechTimer = window.setTimeout(() => window.speechSynthesis.speak(utterance), 40)
 }
 
 function takeUniquePairs(source, count) {
